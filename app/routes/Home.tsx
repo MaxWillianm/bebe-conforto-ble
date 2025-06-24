@@ -17,7 +17,15 @@ import {
 } from "react-native-paper";
 
 export default function Home() {
-  const { isConnected, rssi, connectedDevice, reconnectLastDevice } = useBle();
+  const {
+    isConnected,
+    rssi,
+    connectedDevice,
+    reconnectLastDevice,
+    pauseRssi,
+    resumeRssi,
+    isMonitoring,
+  } = useBle();
   const [refreshing, setRefreshing] = useState(false);
   const theme = useTheme();
 
@@ -72,8 +80,8 @@ export default function Home() {
           title={isConnected ? `Conectado` : "Não conectado"}
           titleStyle={styles.title}
         />
-        {!isConnected && (
-          <Card.Actions>
+        <Card.Actions>
+          {!isConnected && (
             <Button
               mode="contained-tonal"
               onPress={onRefresh}
@@ -81,8 +89,15 @@ export default function Home() {
             >
               Reconectar
             </Button>
-          </Card.Actions>
-        )}
+          )}
+          <Button
+            mode="contained-tonal"
+            onPress={isMonitoring ? pauseRssi : resumeRssi}
+            style={{ marginLeft: 8 }}
+          >
+            {isMonitoring ? "Pausar" : "Retomar"}
+          </Button>
+        </Card.Actions>
       </Card>
 
       {rssi !== null && (
