@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ScrollView,
   RefreshControl,
   StyleSheet,
   Text,
   View,
+  Vibration,
 } from "react-native";
 import { useBle } from "../Contexts/BleContext";
 import {
@@ -37,6 +38,16 @@ export default function Home() {
     progress = Math.max(0, Math.min(1, progress));
     return progress;
   };
+
+  useEffect(() => {
+    if (rssi !== null) {
+      const progress = getProgressFromRSSI(rssi);
+      console.log("progress -> ", progress);
+      if (progress <= 0.3) {
+        Vibration.vibrate(1000);
+      }
+    }
+  }, [rssi]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -98,6 +109,7 @@ export default function Home() {
                   : "Muito distante"}
               </Text>
             </View>
+            <Text style={{ marginTop: 12 }}>Potencia do sinal: {rssi}</Text>
           </Card.Content>
         </Card>
       )}
