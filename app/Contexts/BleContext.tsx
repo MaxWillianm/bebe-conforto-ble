@@ -9,7 +9,8 @@ import React, {
 } from "react";
 import { BleManager, Device } from "react-native-ble-plx";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Alert } from "react-native";
+import { Alert, Vibration } from "react-native";
+import { Buffer } from "buffer";
 const myDeviceId = "FC:B4:67:51:4A:7A";
 
 type BleContextType = {
@@ -23,12 +24,17 @@ type BleContextType = {
   pauseRssi: () => void;
   resumeRssi: () => void;
   isMonitoring: boolean;
+  messages: string[];
+  disconnectAlert: boolean;
+  clearMessages: () => void;
 };
 
 const BleContext = createContext<BleContextType>({} as BleContextType);
 
 const manager = new BleManager();
 const LAST_DEVICE_ID_KEY = "LAST_CONNECTED_DEVICE_ID";
+const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
 export const BleProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -37,7 +43,28 @@ export const BleProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isConnected, setIsConnected] = useState(false);
   const [rssi, setRssi] = useState<number | null>(null);
   const [isMonitoring, setIsMonitoring] = useState(true);
+  const [messages, setMessages] = useState<string[]>([]);
+  const [disconnectAlert, setDisconnectAlert] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const listenNotifications = useCallback((device: Device) => {
+    device.monitorCharacteristicForService(
+      SERVICE_UUID,
+      CHARACTERISTIC_UUID,
+      (error, characteristic) => {
+        if (error) {
+          console.log("Erro ao monitorar:", error);
+          return;
+        }
+        if (characteristic?.value) {
+          const decoded = Buffer.from(characteristic.value, "base64").toString(
+            "utf-8",
+          );
+          setMessages((prev) => [...prev, decoded]);
+        }
+      },
+    );
+  }, []);
 
   const startRssiLoop = useCallback(
     (device: Device) => {
@@ -51,6 +78,8 @@ export const BleProvider: React.FC<{ children: React.ReactNode }> = ({
             Alert.alert("Desconectado", "O dispositivo foi desconectado.", [
               { text: "OK" },
             ]);
+            Vibration.vibrate();
+            setDisconnectAlert(true);
             clearInterval(intervalRef.current!);
             intervalRef.current = null;
             setConnectedDevice(null);
@@ -81,7 +110,9 @@ export const BleProvider: React.FC<{ children: React.ReactNode }> = ({
         await device.discoverAllServicesAndCharacteristics();
         setConnectedDevice(device);
         setIsConnected(true);
+        setDisconnectAlert(false);
         await AsyncStorage.setItem(LAST_DEVICE_ID_KEY, deviceId);
+        listenNotifications(device);
         if (isMonitoring) {
           startRssiLoop(device);
         }
@@ -131,6 +162,10 @@ export const BleProvider: React.FC<{ children: React.ReactNode }> = ({
     setRssi(null);
   }, []);
 
+  const clearMessages = useCallback(() => {
+    setMessages([]);
+  }, []);
+
   const resumeRssi = useCallback(() => {
     setIsMonitoring(true);
     if (connectedDevice) {
@@ -173,6 +208,9 @@ export const BleProvider: React.FC<{ children: React.ReactNode }> = ({
         pauseRssi,
         resumeRssi,
         isMonitoring,
+        messages,
+        disconnectAlert,
+        clearMessages,
       }}
     >
       {children}

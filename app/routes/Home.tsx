@@ -25,6 +25,8 @@ export default function Home() {
     pauseRssi,
     resumeRssi,
     isMonitoring,
+    messages,
+    disconnectAlert,
   } = useBle();
   const [refreshing, setRefreshing] = useState(false);
   const theme = useTheme();
@@ -125,6 +127,29 @@ export default function Home() {
               </Text>
             </View>
             <Text style={{ marginTop: 12 }}>Potencia do sinal: {rssi}</Text>
+          </Card.Content>
+        </Card>
+      )}
+
+      {disconnectAlert && (
+        <Card style={[styles.card, { backgroundColor: "#f8d7da" }]}>
+          <Card.Content>
+            <Text style={{ color: "#721c24", fontWeight: "bold" }}>
+              Dispositivo desconectado!
+            </Text>
+          </Card.Content>
+        </Card>
+      )}
+
+      {messages.length > 0 && (
+        <Card style={styles.card}>
+          <Card.Title title="Mensagens recebidas" />
+          <Card.Content>
+            {messages.map((m, i) => (
+              <Text key={i} style={{ marginBottom: 4 }}>
+                {m}
+              </Text>
+            ))}
           </Card.Content>
         </Card>
       )}
