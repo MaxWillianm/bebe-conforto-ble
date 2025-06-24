@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Text,
   View,
@@ -6,11 +6,13 @@ import {
   FlatList,
   Alert,
   ActivityIndicator,
+  Vibration,
 } from "react-native";
 import { Device } from "react-native-ble-plx";
 import { Buffer } from "buffer";
 import { useBle } from "../Contexts/BleContext";
 import { BleManager } from "react-native-ble-plx";
+import * as Notifications from "expo-notifications";
 
 export default function Settings() {
   const { connectedDevice, isConnected, connectToDevice, disconnectDevice } =
@@ -21,6 +23,10 @@ export default function Settings() {
   >([]);
   const [isLoading, setIsLoading] = useState(false);
   const [receivedMessage, setReceivedMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    Notifications.requestPermissionsAsync();
+  }, []);
 
   const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
   const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
@@ -80,6 +86,12 @@ export default function Settings() {
           );
           console.log("Recebido do ESP32:", decoded);
           setReceivedMessage(decoded);
+          Alert.alert("Mensagem recebida", decoded);
+          Vibration.vibrate(1000);
+          Notifications.scheduleNotificationAsync({
+            content: { title: "Mensagem recebida", body: decoded, sound: true },
+            trigger: null,
+          });
         }
       }
     );
