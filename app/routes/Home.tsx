@@ -95,7 +95,7 @@ export default function Home() {
             onPress={isMonitoring ? pauseRssi : resumeRssi}
             style={{ marginLeft: 8 }}
           >
-            {isMonitoring ? "Standby" : "Retomar"}
+            {isMonitoring ? "Pausar" : "Retomar"}
           </Button>
         </Card.Actions>
       </Card>
@@ -116,12 +116,12 @@ export default function Home() {
                 {getProgressFromRSSI(rssi) >= 0.8
                   ? "Muito próximo"
                   : getProgressFromRSSI(rssi) >= 0.6
-                    ? "Próximo"
-                    : getProgressFromRSSI(rssi) >= 0.4
-                      ? "Médio"
-                      : getProgressFromRSSI(rssi) >= 0.2
-                        ? "Distante"
-                        : "Muito distante"}
+                  ? "Próximo"
+                  : getProgressFromRSSI(rssi) >= 0.4
+                  ? "Médio"
+                  : getProgressFromRSSI(rssi) >= 0.2
+                  ? "Distante"
+                  : "Muito distante"}
               </Text>
             </View>
             <Text style={{ marginTop: 12 }}>Potencia do sinal: {rssi}</Text>
