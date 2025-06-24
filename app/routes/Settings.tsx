@@ -55,9 +55,11 @@ export default function Settings() {
 
   const handleConnect = async (id: string) => {
     try {
-      await connectToDevice(id);
-      setDevicesList([]);
-      listenNotifications(connectedDevice!); // escuta após conectar
+      const device = await connectToDevice(id);
+      if (device) {
+        setDevicesList([]);
+        listenNotifications(device); // escuta após conectar
+      }
     } catch (error) {
       console.error("Erro ao conectar:", error);
     }

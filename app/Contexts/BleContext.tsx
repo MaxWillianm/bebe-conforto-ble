@@ -16,10 +16,10 @@ type BleContextType = {
   connectedDevice: Device | null;
   isConnected: boolean;
   rssi: number | null;
-  connectToDevice: (deviceId: string) => Promise<void>;
+  connectToDevice: (deviceId: string) => Promise<Device | null>;
   disconnectDevice: () => Promise<void>;
   reconnectLastDevice: () => Promise<void>;
-  verifyStatusBlePoweredOn: () => void;
+  verifyStatusBlePoweredOn: () => Promise<boolean>;
 };
 
 const BleContext = createContext<BleContextType>({} as BleContextType);
@@ -66,7 +66,7 @@ export const BleProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const connectToDevice = useCallback(
-    async (deviceId: string) => {
+    async (deviceId: string): Promise<Device | null> => {
       try {
         const device = await manager.connectToDevice(deviceId);
         await device.discoverAllServicesAndCharacteristics();
@@ -74,6 +74,7 @@ export const BleProvider: React.FC<{ children: React.ReactNode }> = ({
         setIsConnected(true);
         await AsyncStorage.setItem(LAST_DEVICE_ID_KEY, deviceId);
         startRssiLoop(device);
+        return device;
       } catch (error) {
         Alert.alert(
           "Erro ao conectar",
@@ -83,6 +84,7 @@ export const BleProvider: React.FC<{ children: React.ReactNode }> = ({
 
         setConnectedDevice(null);
         setIsConnected(false);
+        return null;
       }
     },
     [startRssiLoop]
@@ -109,27 +111,21 @@ export const BleProvider: React.FC<{ children: React.ReactNode }> = ({
     await connectToDevice(lastId ?? myDeviceId);
   }, [connectToDevice]);
 
-  const verifyStatusBlePoweredOn = useCallback(() => {
-    const [isPoweredOn, setIsPoweredOn] = useState(false);
+  const verifyStatusBlePoweredOn = useCallback(async (): Promise<boolean> => {
+    const state = await manager.state();
 
-    manager.onStateChange((state) => {
-      if (state === "PoweredOn") {
-        console.log("Bluetooth ligado");
-        setIsPoweredOn(true);
-        manager.stopDeviceScan();
-      } else {
-        console.log("Bluetooth desligado");
-        setIsPoweredOn(false);
-        Alert.alert(
-          "Bluetooth Desligado",
-          "Ative o Bluetooth para continuar.",
-          [{ text: "OK" }]
-        );
-      }
-    }, true);
-    if (!isPoweredOn) {
-      return false;
-    } else true;
+    if (state === "PoweredOn") {
+      console.log("Bluetooth ligado");
+      return true;
+    }
+
+    console.log("Bluetooth desligado");
+    Alert.alert(
+      "Bluetooth Desligado",
+      "Ative o Bluetooth para continuar.",
+      [{ text: "OK" }]
+    );
+    return false;
   }, []);
 
   useEffect(() => {
